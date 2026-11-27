@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pytest
 
@@ -10,7 +11,8 @@ from tests.fakes import InMemoryRepository
 def isolated_application_environment(
     monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
 ) -> None:
-    if "live" in request.node.path.parts:
+    live_module = Path(__file__).resolve().parent / "integration" / "test_live_azure.py"
+    if request.node.path.resolve() == live_module:
         return
     names = {name.upper() for name in Settings.model_fields}
     for name in list(os.environ):
