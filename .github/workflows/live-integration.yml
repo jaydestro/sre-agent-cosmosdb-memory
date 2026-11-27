@@ -1,0 +1,111 @@
+name: Opt-in live Azure integration
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type I_APPROVE_ISOLATED_DEV_DATA_AND_INFERENCE_CHARGES
+        required: true
+        type: string
+      run_live:
+        description: Use existing isolated development resources (billable)
+        required: true
+        type: boolean
+        default: false
+      run_key_tests:
+        description: Also test a separately preconfigured Cosmos key (never enables keys)
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: isolated-dev-live
+  cancel-in-progress: false
+jobs:
+  live:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.run_live &&
+      inputs.confirmation == 'I_APPROVE_ISOLATED_DEV_DATA_AND_INFERENCE_CHARGES'
+    environment: isolated-dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PIP_INDEX_URL: https://pypi.org/simple
+      PIP_CONFIG_FILE: /dev/null
+      ALLOW_AZURE_USE: "true"
+      RUN_LIVE_TESTS: "true"
+      LIVE_AZURE_TESTS: "true"
+      APP_ENV: development
+      ALLOW_DEMO_RESET: "true"
+      LIVE_AZURE_CONFIRMATION: I_APPROVE_ISOLATED_DEV_DATA_AND_INFERENCE_CHARGES
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      TEST_SCOPE_ID: ${{ vars.TEST_SCOPE_ID }}
+      SCOPE_ID: ${{ vars.TEST_SCOPE_ID }}
+      COSMOS_ENDPOINT: ${{ vars.COSMOS_ENDPOINT }}
+      COSMOS_DATABASE: ${{ vars.COSMOS_DATABASE }}
+      COSMOS_MEMORY_CONTAINER: ${{ vars.COSMOS_MEMORY_CONTAINER }}
+      COSMOS_AUTH_MODE: entra
+      COSMOS_OPERATIONS_CONTAINER: ${{ vars.COSMOS_OPERATIONS_CONTAINER }}
+      COSMOS_EVIDENCE_CONTAINER: ${{ vars.COSMOS_EVIDENCE_CONTAINER }}
+      FOUNDRY_ENDPOINT: ${{ vars.FOUNDRY_ENDPOINT }}
+      REASONING_DEPLOYMENT: ${{ vars.REASONING_DEPLOYMENT }}
+      MEMORY_DEPLOYMENT: ${{ vars.MEMORY_DEPLOYMENT }}
+      MEMORY_EMBEDDING_DEPLOYMENT: ${{ vars.MEMORY_EMBEDDING_DEPLOYMENT }}
+      EMBEDDING_ENDPOINT: ${{ vars.EMBEDDING_ENDPOINT }}
+      BLOB_ACCOUNT_URL: ${{ vars.BLOB_ACCOUNT_URL }}
+      BLOB_CONTAINER: ${{ vars.BLOB_CONTAINER }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - name: Install manifest dependencies and dev extra
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install '.[dev]'
+      - name: Require protected environment configuration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          protected=$(gh api "repos/$GITHUB_REPOSITORY/environments/isolated-dev" \
+            --jq '[.protection_rules[]? | select(.type == "required_reviewers") | .reviewers[]?] | length')
+          test "$protected" -gt 0 || { echo "::error::isolated-dev must have required reviewers"; exit 1; }
+          test -n "$AZURE_CLIENT_ID"
+          test -n "$AZURE_TENANT_ID"
+          test -n "$AZURE_SUBSCRIPTION_ID"
+          case "$TEST_SCOPE_ID" in test-*) ;; *) echo "::error::A test- fixture scope is required"; exit 1 ;; esac
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Existing-resource live tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest tests/integration/test_live_azure.py
+      - name: Optional preconfigured Cosmos key test
+        if: inputs.run_key_tests
+        env:
+          COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+          COSMOS_AUTH_MODE: key
+          LIVE_COSMOS_KEY_AUTH: "true"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$COSMOS_KEY" ]; then
+            echo "::notice::Key test skipped: no protected environment key is configured."
+            exit 0
+          fi
+          python -m pytest 'tests/integration/test_live_azure.py::test_real_existing_cosmos_auth_modes[key]'

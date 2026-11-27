@@ -1,0 +1,53 @@
+name: Offline CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: offline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  ALLOW_AZURE_USE: "false"
+  RUN_LIVE_TESTS: "false"
+  LIVE_AZURE_TESTS: "false"
+  PIP_INDEX_URL: https://pypi.org/simple
+  PIP_CONFIG_FILE: /dev/null
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - name: Install manifest dependencies and dev extra
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install '.[dev]' 'hatchling>=1.27'
+      - run: python -m ruff check .
+      - run: python -m ruff format --check .
+      - run: python -m pytest
+      - run: python -m mypy app scripts
+      - run: python -m pip_audit
+      - name: Verify installed wheel outside checkout
+        run: |
+          python -m pip wheel --no-deps --no-build-isolation --wheel-dir dist .
+          python tests/packaging/verify_wheel.py dist/*.whl
+      - run: docker build --tag sre-agent-memory:ci .
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_COMMENTS: "false"

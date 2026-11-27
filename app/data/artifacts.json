@@ -1,0 +1,8 @@
+[
+  {"kind":"text","file":"incident-report.md","title":"Historical pool exhaustion incident report","source":"synthetic INC-PAY-20261019","captured_at":"2026-10-19T14:20:00+00:00"},
+  {"kind":"text","file":"pool-runbook.md","title":"Reviewed bounded pool correction runbook","source":"synthetic payments runbook revision 3","captured_at":"2026-10-20T09:00:00+00:00"},
+  {"kind":"text","file":"deployment-runbook.md","title":"Contradictory deployment configuration escalation","source":"synthetic payments deployment runbook revision 2","captured_at":"2026-10-25T11:00:00+00:00"},
+  {"kind":"image","file":"monitoring-dashboard.png","title":"Historical payments incident dashboard","source":"synthetic INC-PAY-20261019 dashboard export","captured_at":"2026-10-19T14:10:00+00:00"},
+  {"kind":"image","file":"pool-utilization.png","title":"Historical pool utilization before and after correction","source":"synthetic INC-PAY-20261019 chart export","captured_at":"2026-10-19T14:20:00+00:00"},
+  {"kind":"image","file":"service-architecture.png","title":"Payments development service architecture","source":"synthetic architecture revision 4","captured_at":"2026-10-18T12:00:00+00:00"}
+]
