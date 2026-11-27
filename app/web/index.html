@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Incident Memory · Payments operations</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">IM <span>Incident Memory</span></a>
+    <span class="environment">Payments · Governed operations</span>
+    <div id="identity" class="identity">Checking operator access</div>
+  </header>
+  <main>
+    <section class="heading">
+      <div><p class="eyebrow">OPERATIONS WORKSPACE</p><h1>Payments incident console</h1>
+      <p>Live telemetry, historical evidence, and exact, accountable actions.</p></div>
+      <button id="refresh" type="button">Refresh snapshot</button>
+    </section>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <section id="setup" class="panel" hidden>
+      <h2>Developer setup required</h2>
+      <p id="setup-detail"></p>
+      <p>No runtime mock, model call, or provisioning happens here. Configure Cosmos DB, Foundry,
+      embeddings and a private Blob container; provision resources separately, explicitly opt in,
+      then run the development seed. Restart this process after setup.</p>
+      <p>On localhost development, the server maps <code>X-Demo-Operator: engineer-a</code> to
+      administrator and <code>engineer-b</code> to operator. Deployed access requires a protected,
+      authenticated Container Apps ingress with an explicitly trusted reverse proxy; this console
+      does not implement a token or login bypass.</p>
+    </section>
+    <div id="workspace" hidden>
+      <section class="panel live-section" aria-labelledby="live-title">
+        <div class="section-title"><h2 id="live-title">Live service metrics</h2>
+          <label><input id="auto-refresh" type="checkbox"> Refresh every 10 seconds</label></div>
+        <p class="muted">Persisted synthetic development workload · not production telemetry.
+          Historical images below are evidence, not current measurements.</p>
+        <div id="metrics" class="metrics"></div>
+        <p id="observed" class="muted"></p>
+      </section>
+      <div class="columns">
+        <section class="panel investigation" aria-labelledby="investigate-title">
+          <h2 id="investigate-title">Investigate</h2>
+          <p class="muted">Tool activity shows concise outcomes, not private reasoning.</p>
+          <form id="investigation-form">
+            <label for="question">Question</label>
+            <textarea id="question" rows="3" maxlength="2000" required>Why are payments failing?</textarea>
+            <label for="incident">Incident</label>
+            <select id="incident"><option value="">Create a new incident</option></select>
+            <div class="form-row"><label><input id="use-memory" type="checkbox" checked>
+              Recall verified historical procedures</label><button type="submit">Investigate</button></div>
+          </form>
+          <div id="answer" aria-live="polite"></div>
+          <h3>Observable tool activity</h3><ol id="tools" class="timeline"></ol>
+          <h3>Recalled historical procedures</h3><div id="recalled"></div>
+          <h3>Historical evidence</h3><div id="evidence" class="evidence-grid"></div>
+        </section>
+        <aside class="panel" aria-labelledby="control-title">
+          <h2 id="control-title">Execution controls</h2>
+          <p id="mode-description"></p>
+          <div id="modes" class="button-group">
+            <button data-mode="guarded" type="button">Guarded</button>
+            <button data-mode="autonomous" type="button">Autonomous</button>
+            <button data-mode="paused" type="button">Paused</button>
+          </div>
+          <button id="emergency-stop" class="danger" type="button">Emergency stop · Pause</button>
+          <p class="muted">Administrator only. Emergency stop disables further actions; it does
+            not undo completed actions. Autonomous mode remains constrained by policy,
+            expiry, cooldown, action budgets, and fresh telemetry.</p>
+          <h3>Current policy and worker</h3><dl id="policy"></dl>
+          <details><summary>Set narrower policy limits (administrator)</summary>
+            <form id="policy-form">
+              <label for="policy-expiry">Policy expiry (UTC)</label>
+              <input id="policy-expiry" type="datetime-local" required>
+              <label for="policy-actions">Maximum actions (1–10)</label>
+              <input id="policy-actions" type="number" min="1" max="10" value="10" required>
+              <label for="policy-attempts">Maximum attempts (1–3)</label>
+              <input id="policy-attempts" type="number" min="1" max="3" value="3" required>
+              <label><input id="policy-rollback" type="checkbox">
+                Allow a separately authorized 100 → 50 rollback after a verified failed correction</label>
+              <button type="submit">Apply limits to current mode</button>
+            </form>
+          </details>
+          <div id="scenario-controls" hidden>
+            <h3>Development scenario</h3>
+            <label for="scenario">Scenario</label>
+            <select id="scenario">
+              <option value="pool_exhaustion">Connection pool exhaustion</option>
+              <option value="deployment_error">Contradictory deployment error</option>
+              <option value="healthy">Healthy</option>
+            </select>
+            <button id="inject" type="button">Apply development scenario</button>
+          </div>
+        </aside>
+      </div>
+      <section class="panel" aria-labelledby="proposals-title">
+        <h2 id="proposals-title">Exact remediation proposals</h2>
+        <p class="muted">Approval binds the displayed immutable digest, target version and expiry.
+          A changed target requires a new proposal. No blanket approval or model-granted elevation.</p>
+        <div id="proposals" class="proposal-grid"></div>
+      </section>
+      <section class="panel" aria-labelledby="memory-title">
+        <div class="section-title"><h2 id="memory-title">Procedural memory</h2>
+          <button id="load-memories" type="button">Refresh memories</button></div>
+        <p class="muted">Verified outcomes retain provenance, review state and validity.
+          Recalled history must never replace current telemetry or authorization.</p>
+        <div id="memories" class="proposal-grid"></div>
+      </section>
+      <section class="panel" aria-labelledby="history-title">
+        <h2 id="history-title">Durable worker, elevation and action history</h2>
+        <p class="muted">The monitor runs in this server process without a browser. History is
+          persisted; refreshing this view does not execute a worker tick.</p>
+        <ol id="history" class="timeline"></ol>
+      </section>
+    </div>
+  </main>
+  <footer>Incident Memory · Explicit access, bounded actions, verifiable outcomes</footer>
+</body>
+</html>

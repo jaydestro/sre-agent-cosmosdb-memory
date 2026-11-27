@@ -1,0 +1,91 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sre-agent-cosmosdb-memory"
+version = "0.1.0"
+description = "Governed payments incident agent with Azure Cosmos DB memory"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+  "jinja2>=3.1.6,<4",
+  "pydantic-settings>=2.8,<3",
+  "azure-cosmos>=4.16,<5",
+  "azure-identity>=1.20,<2",
+  "azure-storage-blob>=12.25,<13",
+  "azure-data-ai==1.1.0b1",
+  "openai>=2.25,<4",
+  "Pillow>=11.1",
+  "agent-framework-core==1.26.0",
+  "agent-framework-foundry==1.16.2",
+  "agent-framework-openai==1.18.2",
+  "agent-framework-azure-cosmos-memory==1.0.0a261106",
+  "azure-cosmos-agent-memory==0.3.0b2",
+  # Native memory 0.3.0b2 templates require this compatible, security-fixed loader.
+  "prompty==2.0.0b3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<10",
+  "pytest-asyncio>=0.25,<2",
+  "httpx>=0.28,<1",
+  "ruff>=0.11,<1",
+  "mypy>=1.15,<2",
+  "pip-audit>=2.8,<3",
+]
+
+[project.scripts]
+incident-memory = "app.cli:main"
+incident-memory-seed = "scripts.seed:main"
+incident-memory-reset = "scripts.reset:main"
+incident-memory-evaluate = "scripts.evaluate:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "scripts"]
+only-include = ["app", "scripts"]
+
+[tool.hatch.build]
+only-include = ["app", "scripts", "pyproject.toml", "LICENSE"]
+include = [
+  "app/**/*.py",
+  "scripts/*.py",
+  "app/web/index.html",
+  "app/web/app.js",
+  "app/web/styles.css",
+  "app/data/artifacts.json",
+  "app/data/incident-report.md",
+  "app/data/pool-runbook.md",
+  "app/data/deployment-runbook.md",
+  "app/data/monitoring-dashboard.png",
+  "app/data/pool-utilization.png",
+  "app/data/service-architecture.png",
+  "pyproject.toml",
+  "LICENSE",
+]
+exclude = ["**/__pycache__", "**/*.pyc"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["app", "scripts", "pyproject.toml", "LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.uv]
+prerelease = "allow"
