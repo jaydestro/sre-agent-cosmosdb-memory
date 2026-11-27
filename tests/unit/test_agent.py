@@ -176,15 +176,37 @@ def test_supported_prompt_normalization_preserves_fixed_boundary():
 
 @pytest.mark.asyncio
 async def test_installed_foundry_sdk_tool_roundtrip_and_usage_protocol(investigation):
+    import azure.identity.aio as identity
     import httpx
     from azure.ai.projects.aio import AIProjectClient
     from azure.core.credentials import AccessToken
-    from azure.identity.aio import DefaultAzureCredential
 
     settings, repo, _, principal = investigation
     requests = []
 
+    class OfflineCredential:
+        def __init__(self):
+            self.scopes = []
+            self.closed = False
+
+        async def get_token(self, *scopes, **kwargs):
+            self.scopes.extend(scopes)
+            return AccessToken("offline-protocol-token", 4102444800)
+
+        async def close(self):
+            self.closed = True
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            await self.close()
+
+    credential = OfflineCredential()
+    real_credential = identity.DefaultAzureCredential
+
     def respond(request):
+        assert request.headers["Authorization"] == "Bearer offline-protocol-token"
         body = json.loads(request.content)
         requests.append(body)
         if len(requests) == 1:
@@ -241,10 +263,20 @@ async def test_installed_foundry_sdk_tool_roundtrip_and_usage_protocol(investiga
         with (
             patch.object(AIProjectClient, "get_openai_client", openai_client),
             patch.object(
-                DefaultAzureCredential,
+                real_credential,
                 "get_token",
-                AsyncMock(return_value=AccessToken("offline-protocol-token", 4102444800)),
-            ),
+                AsyncMock(side_effect=AssertionError("Real Azure authentication is forbidden.")),
+            ) as real_token,
+            patch.object(
+                real_credential,
+                "get_token_info",
+                AsyncMock(side_effect=AssertionError("Real Azure authentication is forbidden.")),
+            ) as real_token_info,
+            patch.object(identity, "DefaultAzureCredential", return_value=credential) as factory,
+            patch(
+                "socket.socket.connect",
+                side_effect=AssertionError("Real network connections are forbidden."),
+            ) as connect,
         ):
             raw = await service._reason(
                 SUPPORTED_QUESTIONS[0],
@@ -255,6 +287,11 @@ async def test_installed_foundry_sdk_tool_roundtrip_and_usage_protocol(investiga
                 principal,
                 False,
             )
+    factory.assert_called_once_with()
+    real_token.assert_not_awaited()
+    real_token_info.assert_not_awaited()
+    connect.assert_not_called()
+    assert credential.scopes and credential.closed
     assert json.loads(raw)["proposed_value"] == 100
     assert len(requests) == budget.model_calls == 2
     assert budget.input_tokens == 20 and budget.output_tokens == 10

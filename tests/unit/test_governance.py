@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from datetime import timedelta
 from threading import Barrier
 
@@ -9,6 +10,7 @@ from app.policy import evaluate_policy
 from app.remediation import Governance, proposal_digest
 from app.security import Principal
 from app.simulation import utcnow
+from app.tools import DiagnosticTools
 
 
 @pytest.fixture
@@ -69,6 +71,38 @@ def test_digest_binds_exact_immutable_server_evidence(governance, admin, repo):
     with pytest.raises(Conflict):
         governance.approve(value["id"], value["digest"], admin)
     assert governance.simulation.snapshot()["pool_size"] == 50
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("pool_utilization", [1, True, 0.99])
+async def test_complete_proof_approval_survives_cosmos_integral_json_float_normalization(
+    governance, admin, repo, settings, pool_utilization
+):
+    tools = DiagnosticTools(repo, settings, admin, "incident:numeric-wire")
+    for function in (tools.config, tools.backend, tools.metrics, tools.health):
+        await function()
+    proof = tools.verified_pool_proposal(100)
+    value = governance.propose(
+        "incident:numeric-wire",
+        100,
+        admin,
+        evidence=[{"source": "current_diagnostic_tools", **proof["proof"]}],
+    )
+    wire = deepcopy(value)
+    assert (
+        type(wire["diagnostic_proof"]["proof"]["metrics"]["metrics"]["pool_utilization"]) is float
+    )
+    wire["diagnostic_proof"]["proof"]["metrics"]["metrics"]["pool_utilization"] = pool_utilization
+    wire["evidence"][0]["state"]["metrics"]["pool_utilization"] = pool_utilization
+    patch(repo, value["id"], evidence=wire["evidence"], diagnostic_proof=wire["diagnostic_proof"])
+    if type(pool_utilization) is not int:
+        with pytest.raises(Conflict):
+            governance.approve(value["id"], value["digest"], admin)
+        assert governance.simulation.snapshot()["pool_size"] == 50
+        return
+    assert governance.approve(value["id"], value["digest"], admin)["status"] == "queued"
+    assert governance.execute_pending()[0]["verified"]
+    assert governance.simulation.snapshot()["healthy"]
 
 
 def test_atomic_human_execution_and_verified_resolution(governance, admin, repo):

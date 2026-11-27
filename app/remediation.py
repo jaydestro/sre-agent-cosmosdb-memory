@@ -3,6 +3,7 @@
 import hashlib
 import hmac
 import json
+import math
 from datetime import timedelta
 from uuid import uuid4
 
@@ -49,8 +50,20 @@ TARGET_FIELDS = (
 
 
 def content_digest(value):
+    def canonical(item):
+        # Cosmos normalizes integral JSON floats to integers on persistence.
+        if type(item) is float and math.isfinite(item) and item.is_integer():
+            return int(item)
+        if isinstance(item, dict):
+            return {key: canonical(nested) for key, nested in item.items()}
+        if isinstance(item, (list, tuple)):
+            return [canonical(nested) for nested in item]
+        return item
+
     return hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        json.dumps(
+            canonical(value), sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode()
     ).hexdigest()
 
 
