@@ -23,6 +23,8 @@ dependencies = [
   "agent-framework-openai==1.18.2",
   "agent-framework-azure-cosmos-memory==1.0.0a261106",
   "azure-cosmos-agent-memory==0.3.0b2",
+  # Native memory 0.3.0b2 templates require this compatible, security-fixed loader.
+  "prompty==2.0.0b3",
 ]
 
 [project.optional-dependencies]

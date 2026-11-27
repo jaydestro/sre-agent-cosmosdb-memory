@@ -1,4 +1,5 @@
 import hashlib
+import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -313,6 +314,28 @@ def native_wire_client(setup_memory):
 
     service._persist_native = AsyncMock(side_effect=persist)
     return service, repo, result, client, documents, state
+
+
+@pytest.mark.asyncio
+async def test_memory_uses_fresh_verification_not_stale_service_metrics(native_wire_client):
+    service, repo, result, client, documents, _ = native_wire_client
+    repo.patch(
+        result["id"],
+        [{"op": "set", "path": "/after/healthy", "value": False}],
+        result["_etag"],
+    )
+
+    await service.record_verified(result)
+
+    turn = json.loads(client.upsert_memory.await_args.kwargs["content"])
+    assert turn["after"]["healthy"] is True
+    references = [
+        document for document in documents if document["type"] in {"episodic", "procedural"}
+    ]
+    assert references
+    assert all(
+        json.loads(document["content"])["after"]["healthy"] is True for document in references
+    )
 
 
 @pytest.mark.asyncio

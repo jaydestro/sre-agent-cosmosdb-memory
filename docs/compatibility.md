@@ -15,12 +15,21 @@ region, identity, quota, model deployment, or network is ready.
 | Agent Framework core / Foundry / OpenAI | `1.26.0` / `1.16.2` / `1.18.2` |
 | Native Cosmos provider | `agent-framework-azure-cosmos-memory==1.0.0a261106` |
 | Agent Memory Toolkit | `azure-cosmos-agent-memory==0.3.0b2` |
+| Native prompt loader | `prompty==2.0.0b3`; retains the pinned toolkit's template input contract |
 | Cosmos and Blob SDK ranges | Follow the manifest; container properties and credentials must match the adapters |
 
 The native provider and Toolkit are a coupled preview schema. Toolkit 0.3 uses
 `turn`, `thread_summary`, `fact`, `user_summary`, `procedural`, and `episodic`
 wire types. It persists the `type` field; `memory_type` is the model/application
 alias. Do not substitute a later tenant/user partitioning schema.
+
+The toolkit declares `prompty>=2.0.0a9`, but its template input contract requires
+the application's explicit `2.0.0b3` pin. Stable Prompty 2.0.x/2.1 releases use
+an incompatible input contract for Toolkit 0.3.0b2. Beta 3 includes the security
+fixes from beta 2 and supports the toolkit's original templates and parameters;
+the application does not rewrite SDK prompt schemas or substitute private
+prompt assets. Keep this dependency pairing when installing or updating the
+native-memory integration.
 
 Preprovision the native base container, `<base>-turns`, `<base>-summaries`, and
 the toolkit's `counter` container with hierarchical `[/user_id, /thread_id]` keys.
@@ -155,6 +164,7 @@ persisted content; they serve different purposes and must not be interchanged.
 - [Cosmos vector policies and limits](https://learn.microsoft.com/azure/cosmos-db/vector-search)
 - [Agent Framework Cosmos context provider](https://learn.microsoft.com/agent-framework/integrations/by-component/context-providers/azure-cosmos)
 - [Agent Memory Toolkit](https://learn.microsoft.com/azure/cosmos-db/gen-ai/agent-memory-toolkit)
+- [Prompty 2.0.0b3 release](https://pypi.org/project/prompty/2.0.0b3/)
 - [Toolkit v0.3.0b2 client source](https://github.com/AzureCosmosDB/AgentMemoryToolkit/blob/v0.3.0b2/azure/cosmos/agent_memory/aio/cosmos_memory_client.py)
 - [Toolkit v0.3.0b2 chat endpoint source](https://github.com/AzureCosmosDB/AgentMemoryToolkit/blob/v0.3.0b2/azure/cosmos/agent_memory/aio/chat.py)
 - [Toolkit v0.3.0b2 typed memory store](https://github.com/AzureCosmosDB/AgentMemoryToolkit/blob/v0.3.0b2/azure/cosmos/agent_memory/aio/store/memory_store.py)

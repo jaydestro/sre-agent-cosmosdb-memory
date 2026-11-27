@@ -554,14 +554,11 @@ class MemoryService:
                             for k in ("pool_size", "demand", "backend_capacity", "config_valid")
                         },
                         "after": {
-                            k: resolution["after"].get(k)
-                            for k in (
-                                "pool_size",
-                                "demand",
-                                "backend_capacity",
-                                "config_valid",
-                                "healthy",
-                            )
+                            **{
+                                k: resolution["after"].get(k)
+                                for k in ("pool_size", "demand", "backend_capacity", "config_valid")
+                            },
+                            "healthy": resolution["verification"]["healthy"],
                         },
                         "diagnostic_order": order,
                         "lesson": (
