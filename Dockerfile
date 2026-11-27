@@ -7,7 +7,9 @@ WORKDIR /build
 COPY pyproject.toml LICENSE ./
 COPY app ./app
 COPY scripts ./scripts
-RUN python -m pip install --no-cache-dir --index-url https://pypi.org/simple . \
+RUN python -m pip install --no-cache-dir --index-url https://pypi.org/simple \
+        --upgrade 'setuptools>=84.1.0' \
+    && python -m pip install --no-cache-dir --index-url https://pypi.org/simple . \
     && rm -rf /build
 WORKDIR /app
 RUN useradd --uid 10001 --create-home appuser \

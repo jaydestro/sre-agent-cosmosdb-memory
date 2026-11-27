@@ -71,6 +71,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python -m pip install --upgrade 'setuptools>=84.1.0'
           python -m pip install '.[dev]'
       - name: Require protected environment configuration
         env:

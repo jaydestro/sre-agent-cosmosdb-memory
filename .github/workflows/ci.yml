@@ -28,6 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python -m pip install --upgrade 'setuptools>=84.1.0'
           python -m pip install '.[dev]' 'hatchling>=1.27'
       - run: python -m ruff check .
       - run: python -m ruff format --check .
